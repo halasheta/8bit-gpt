@@ -1,6 +1,6 @@
 # 8bit-GPT: Exploring Human-AI Interaction on Obsolete Macintosh OS
 
-This repository contains the source code for the artwork installation of `8bit-GPT`, which simulates an LLM on a legacy Macintosh OS emulator. In this case, we use `Basilisk II` for emulation/
+This repository contains the source code for the artwork installation of `8bit-GPT`, which simulates an LLM on a legacy Macintosh OS emulator. In this case, we use `Basilisk II` for emulation.
 
 The program running on the local machine can be found in `src/local`, where it reads the input from the emulator, sends requests to the model inference server, and writes the output to a shared file location.
 
