@@ -4,12 +4,11 @@ from typing import List, Tuple
 from openai import OpenAI
 import re
 import logging
-import string
 import argparse
 
 
 # The shared disk by the emulator and this program
-SHARED_DSK = "/Users/hsheta/Desktop/Shared"
+SHARED_DSK = "/path/to/Shared"
 
 
 def extract_input(input_file) -> str:
@@ -17,6 +16,7 @@ def extract_input(input_file) -> str:
 
     Args:
         input_file (str): Path to the input file in the shared disk.
+
     Returns:
         str: The extracted input message.
     """
@@ -39,18 +39,20 @@ def query_llm(client: OpenAI, user_prompt: str, chat_history: List[dict], max_ne
         user_prompt (str): The user input extracted from the emulator.
         chat_history (List[dict]): The chat history betweent the user and assistant.
         max_new_tokens (int): The maximum number of tokens to generate using the client.
+
     Returns:
         Tuple[str, List[dict]]: A tuple of the output LLM message and the updated chat history.
     """
-    # append prompt to chat history
+    # Append prompt to chat history
     chat_history.append({"role": "user", "content": user_prompt})
 
     curr_history = chat_history
     if len(curr_history) > 10:
-        # trim the first two rounds of conversations
+        # Trim the first two rounds of conversations
         curr_history = chat_history[:2] + chat_history[-5:]
         logging.debug(curr_history)
 
+    # Send prompt to LLM
     response = client.chat.completions.create(
         model="Llama-2-13b-chat-hf",
         temperature=0.8,
@@ -58,6 +60,7 @@ def query_llm(client: OpenAI, user_prompt: str, chat_history: List[dict], max_ne
         messages=curr_history,
         stop=["\nUser:", "\n"])
 
+    # Ensure there are no unicode characters
     llm_message = response.choices[-1].message.content.encode(
         'ascii', 'ignore')
     llm_message = llm_message.strip().decode('ascii')
@@ -75,10 +78,11 @@ def write_output(response: str,) -> None:
         response (str): The LLM output response.
     """
     output_file = os.path.join(SHARED_DSK, "out.txt")
-    # if os.path.exists(output_file):
-    #     os.remove(output_file)
+
+    # Split messages based on punctuation
     messages = re.findall(r'.*?(?:\.{3}|[?.])', response)
 
+    # Write to file in Mac Roman encoding
     with open(output_file, "w", encoding="mac_roman", newline="\r") as f:
         f.writelines([m.strip() + '\r' for m in messages])
 
@@ -86,6 +90,7 @@ def write_output(response: str,) -> None:
 def main():
     """Main function to run the program."""
     # Connect to model inference server
+    # This URL is obtained by creating an SSH tunnel with the vec-inf job instance
     client = OpenAI(base_url="http://localhost:8080/v1", api_key="EMPTY")
     logging.debug('Connected to inference server')
 
@@ -115,7 +120,6 @@ def main():
                 write_output(response)
             except Exception as e:
                 print(f"Error processing input: {e}")
-
         # Wait before checking again
         time.sleep(1)
 
@@ -125,6 +129,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='8-bit-gpt')
     parser.add_argument('-d', '--debug', action='store_true')
 
+    # Set debug mode based on user input
     args = parser.parse_args()
     logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
 
